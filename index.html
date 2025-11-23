@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en" class="dark-mode">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vell Explorer</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --container-bg: white;
+            --header-bg: #007acc;
+            --header-color: white;
+            --button-bg: white;
+            --button-color: #007acc;
+            --button-hover-bg: #f0f0f0;
+            --border-color: #ccc;
+            --loading-bg: rgba(255, 255, 255, 0.9);
+            --overlay-bg: rgba(0, 0, 0, 0.1);
+            --loading-border: #e0e0e0;
+            --accent-color: #007acc;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --file-item-hover: #f8f9fa;
+            --file-border: #eee;
+            --file-icon-color: #666;
+            --file-name-color: #333;
+            --file-details-color: #888;
+            --directory-color: #0a0a0a;
+            --directory-icon: #FFD700;
+        }
+
+        .dark-mode {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --container-bg: #1e1e1e;
+            --header-bg: #0f4c75;
+            --header-color: #e0e0e0;
+            --button-bg: #2d2d2d;
+            --button-color: #5dade2;
+            --button-hover-bg: #404040;
+            --border-color: #555;
+            --loading-bg: rgba(30, 30, 30, 0.9);
+            --overlay-bg: rgba(255, 255, 255, 0.1);
+            --loading-border: #555;
+            --accent-color: #5dade2;
+            --shadow: rgba(255, 255, 255, 0.1);
+            --box-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
+            --file-item-hover: #2d2d2d;
+            --file-border: #444;
+            --file-icon-color: #bbb;
+            --file-name-color: #e0e0e0;
+            --file-details-color: #aaa;
+            --directory-color: #fafafa;
+            --directory-icon: #FFA500;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--loading-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px var(--shadow);
+            display: none;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--overlay-bg);
+            z-index: 1000;
+        }
+        #loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 8px solid var(--loading-border);
+            border-top: 8px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .container {
+            margin: 0 auto;
+            background: var(--container-bg);
+            min-height: 100vh;
+            box-shadow: 0 0 10px var(--shadow);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .header {
+            background: var(--header-bg);
+            color: var(--header-color);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            margin-left: auto;
+            width: 100%;
+            justify-content: space-between;
+        }
+        .root-setter {
+            display: flex;
+            align-items: center;
+            width: max(calc(100% - 350px), 60px);
+        }
+        .root-setter select {
+            padding: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            width: 100%;
+            transition: border-color 0.3s ease;
+        }
+        .root-setter button {
+            background: var(--button-bg);
+            border: none;
+            color: var(--button-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .root-setter button:hover {
+            background: var(--button-hover-bg);
+        }
+        .view-toggle {
+            text-align: center;
+        }
+        .view-toggle button,
+        .dark-mode-toggle button {
+            background: none;
+            border: none;
+            color: var(--header-color);
+            font-size: 24px;
+            cursor: pointer;
+            padding: unset;
+        }
+        .view-toggle button:hover,
+        .dark-mode-toggle button:hover {
+            opacity: 0.8;
+        }
+
+        .file-list {
+            padding: 20px;
+            margin: 0;
+            column-width: 430px;
+            column-gap: 10px;
+        }
+        .file-item {
+            opacity: 0.8;
+            display: flex;
+            flex-direction: column;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--file-border);
+            cursor: pointer;
+            transition: background-color 0.15s;
+            align-items: normal;
+        }
+        .file-item:hover {
+            background-color: var(--file-item-hover);
+        }
+        .file-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .file-row video {
+            padding-inline: 8px;
+        }
+        .file-icon {
+            margin-right: 15px;
+            font-size: 48px;
+            color: var(--file-icon-color);
+        }
+        .file-info {
+            display: flex;
+            flex-direction: column;
+            text-align: end;
+            width: 100%;
+        }
+        .file-name {
+            font-weight: 500;
+            color: var(--file-name-color);
+            text-align: left;
+        }
+        .file-details {
+            font-size: 12px;
+            color: var(--file-details-color);
+            margin-left: 0;
+            margin-top: 2px;
+        }
+        .directory .file-name {
+            color: var(--directory-color);
+        }
+        .directory .file-icon {
+            color: var(--directory-icon);
+        }
+        .file .file-icon {
+            color: var(--file-icon-color);
+        }
+
+        /* Grid view styles */
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            margin: 0;
+        }
+        .file-item-grid {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            border: 1px solid var(--file-border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.15s, box-shadow 0.15s;
+            text-align: center;
+        }
+        .file-item-grid:hover {
+            background-color: var(--file-item-hover);
+            box-shadow: var(--box-shadow);
+        }
+        .file-icon-grid {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+        .file-name-grid {
+            font-weight: 500;
+            font-size: 14px;
+            line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+        .directory .file-name-grid {
+            color: var(--directory-color);
+        }
+        .directory .file-icon-grid {
+            color: var(--directory-icon);
+        }
+        .file .file-icon-grid {
+            color: var(--file-icon-color);
+        }
+
+        .file-item-grid.video-file {
+            padding: 0;
+            border: unset;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="controls">
+                <h1>📁 Vell Explorer </h1>
+                <div class="root-setter">
+                    <select id="drive-select">
+                        <option value="">Select Drive</option>
+                    </select>
+                </div>
+                <div class="view-toggle">
+                    <button id="list-view" class="material-icons">list</button>
+                    <button id="grid-view" class="material-icons">apps</button>
+                </div>
+                <div class="dark-mode-toggle">
+                    <button id="dark-mode-toggle" class="material-icons">dark_mode</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="files-container">
+            <ul class="file-list" id="files"></ul>
+        </div>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay"></div>
+    <div id="loading" class="loading">
+        <div id="loading-spinner"></div>
+    </div>
+
+    <script>
+        let currentPath = '.';
+        let viewMode = 'grid'; // 'list' or 'grid'
+
+        const videoExtensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.m4v'];
+
+        function downloadFile(filePath, fileName) {
+            const link = document.createElement('a');
+            link.href = '/api/file?path=' + encodeURIComponent(filePath);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function isVideo(name) {
+            const ext = '.' + name.split('.').pop().toLowerCase();
+            return videoExtensions.includes(ext);
+        }
+
+        function getFullPath(itemName) {
+            return currentPath === '.' ? itemName : currentPath + '/' + itemName;
+        }
+
+        function createVideoThumbnail(videoSrc, width, height) {
+            const video = document.createElement('video');
+            video.src = videoSrc;
+            video.controls = true;
+            video.width = width;
+            video.height = height;
+            return video;
+        }
+
+        function computeParent(path) {
+            if (path === '.') return '.';
+            const parts = path.split('/');
+            parts.pop();
+            return parts.join('/') || '.';
+        }
+
+        function loadDirectory(path) {
+            const loadingEl = document.getElementById('loading');
+            const overlayEl = document.getElementById('loading-overlay');
+            currentPath = path;
+            loadingEl.style.display = 'block';
+            overlayEl.style.display = 'block';
+            fetch('/api/files?path=' + encodeURIComponent(path))
+                .then(response => response.json().then(data => ({ response, data })))
+                .then(({ response, data }) => {
+                if (data.error || !response.ok) {
+                    alert('Error loading directory: ' + (data.error || 'Server error'));
+                    return;
+                }
+                if (data.path !== '.') {
+                    data.items.unshift({name: '..', isDirectory: true});
+                }
+                renderFiles(data.items);
+                if (data.fullPath) {
+                    const currentOption = document.querySelector('#drive-select option[value="current"]');
+                    if (currentOption) {
+                        currentOption.textContent = data.fullPath;
+                        document.getElementById('drive-select').value = 'current';
+                    }
+                }
+                })
+                .catch(error => console.error('Error loading directory:', error))
+                .finally(() => {
+                    loadingEl.style.display = 'none';
+                    overlayEl.style.display = 'none';
+                });
+        }
+
+        function renderFiles(items) {
+            const container = document.getElementById('files-container');
+            // Ensure '..' is always first if present
+            let backItem = items.find(item => item.name === '..');
+            let otherItems = items.filter(item => item.name !== '..');
+            otherItems.sort((a, b) => {
+                if (a.isDirectory && !b.isDirectory) return -1;
+                if (!a.isDirectory && b.isDirectory) return 1;
+                return a.name.localeCompare(b.name);
+            });
+            let sortedItems = backItem ? [backItem, ...otherItems] : otherItems;
+            if (viewMode === 'grid') {
+                container.innerHTML = '<div class="file-grid" id="files"></div>';
+                const filesEl = document.getElementById('files');
+                filesEl.innerHTML = '';
+                sortedItems.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'file-item-grid ' + (item.isDirectory ? 'directory' : 'file') + (isVideo(item.name) ? ' video-file' : '');
+
+                    let icon;
+                    if (item.isDirectory) {
+                        icon = document.createElement('span');
+                        icon.className = 'material-icons file-icon-grid';
+                        icon.textContent = 'folder';
+                    } else if (isVideo(item.name)) {
+                        const filePath = getFullPath(item.name);
+                        icon = createVideoThumbnail('/api/file?path=' + encodeURIComponent(filePath), 160, 90);
+                    } else {
+                        icon = document.createElement('span');
+                        icon.className = 'material-icons file-icon-grid';
+                        icon.textContent = 'insert_drive_file';
+                    }
+                    div.appendChild(icon);
+
+                    if (!isVideo(item.name)) {
+                        const nameEl = document.createElement('div');
+                        nameEl.className = 'file-name-grid';
+                        nameEl.textContent = item.name;
+                        div.appendChild(nameEl);
+                    }
+
+                    div.onclick = item.isDirectory ? (item.name === '..' ? () => loadDirectory(computeParent(currentPath)) : () => loadDirectory(getFullPath(item.name))) : (isVideo(item.name) ? null : () => downloadFile(getFullPath(item.name), item.name));
+
+                    filesEl.appendChild(div);
+                });
+            } else {
+                container.innerHTML = '<ul class="file-list" id="files"></ul>';
+                const filesEl = document.getElementById('files');
+                filesEl.innerHTML = '';
+                sortedItems.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'file-item ' + (item.isDirectory ? 'directory' : 'file');
+
+                    let icon;
+                    if (item.isDirectory) {
+                        icon = document.createElement('span');
+                        icon.className = 'material-icons file-icon';
+                        icon.textContent = 'folder';
+                    } else if (isVideo(item.name)) {
+                        const filePath = getFullPath(item.name);
+                        icon = createVideoThumbnail('/api/file?path=' + encodeURIComponent(filePath), 150, 100);
+                    } else {
+                        icon = document.createElement('span');
+                        icon.className = 'material-icons file-icon';
+                        icon.textContent = 'insert_drive_file';
+                    }
+
+                    const topRow = document.createElement('div');
+                    topRow.className = 'file-row';
+                    topRow.appendChild(icon);
+
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'file-info';
+
+                    const nameEl = document.createElement('div');
+                    nameEl.className = 'file-name';
+                    nameEl.textContent = item.name;
+                    infoDiv.appendChild(nameEl);
+
+                    const detailsEl = document.createElement('div');
+                    detailsEl.className = 'file-details';
+                    if (item.isDirectory) {
+                        detailsEl.textContent = 'Folder';
+                    } else {
+                        detailsEl.textContent = `${(item.size / 1024).toFixed(1)} KB • Modified ${new Date(item.modified).toLocaleDateString()}`;
+                    }
+                    infoDiv.appendChild(detailsEl);
+
+                    topRow.appendChild(infoDiv);
+
+                    li.appendChild(topRow);
+
+                    li.onclick = item.isDirectory ? (item.name === '..' ? () => loadDirectory(computeParent(currentPath)) : () => loadDirectory(getFullPath(item.name))) : () => downloadFile(getFullPath(item.name), item.name);
+
+                    filesEl.appendChild(li);
+                });
+            }
+        }
+
+        document.getElementById('list-view').onclick = () => {
+            viewMode = 'list';
+            loadDirectory(currentPath);
+        };
+
+        document.getElementById('grid-view').onclick = () => {
+            viewMode = 'grid';
+            loadDirectory(currentPath);
+        };
+
+        function loadDrives() {
+            fetch('/api/get-root')
+                .then(response => response.json())
+                .then(currentData => {
+                    const select = document.getElementById('drive-select');
+                    select.innerHTML = '';
+                    const currentOption = document.createElement('option');
+                    currentOption.value = 'current';
+                    currentOption.textContent = currentData.root;
+                    select.appendChild(currentOption);
+                    fetch('/api/drives')
+                        .then(response => response.json())
+                        .then(data => {
+                            data.drives.forEach(drive => {
+                                const option = document.createElement('option');
+                                option.value = drive;
+                                option.textContent = drive;
+                                select.appendChild(option);
+                            });
+                        });
+                    select.value = 'current';
+                })
+                .catch(error => console.error('Error loading drives:', error));
+        }
+
+        document.getElementById('drive-select').onchange = (event) => {
+            const selectedValue = event.target.value;
+            if (selectedValue && selectedValue !== 'current') {
+                fetch('/api/set-root', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: selectedValue })
+                }).then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadDirectory('.');
+                      }
+                }).catch(error => console.error('Error setting root:', error));
+            }
+        };
+
+        document.getElementById('dark-mode-toggle').onclick = () => {
+            document.documentElement.classList.toggle('dark-mode');
+            const button = document.getElementById('dark-mode-toggle');
+            if (document.documentElement.classList.contains('dark-mode')) {
+                button.textContent = 'light_mode';
+            } else {
+                button.textContent = 'dark_mode';
+            }
+        };
+
+        // Load drives and the default directory on page load
+        loadDrives();
+        loadDirectory('.');
+    </script>
+</body>
+</html>
