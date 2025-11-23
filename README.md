@@ -20,7 +20,7 @@ A simple web-based file explorer that allows you to browse, view, and download f
 1. Clone the repository:
    ```bash
    git clone https://github.com/Vellmaxi/the-explorer.git
-   cd vell-explorer
+   cd the-explorer
    ```
 
 2. Install dependencies:

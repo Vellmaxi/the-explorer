@@ -5,7 +5,7 @@ const path = require('path');
 const app = express();
 app.use(express.json());
 const PORT = 3000;
-let PROJECT_ROOT_API = path.normalize('F:/[Phone] Photos Videos/Namiseon Vid');
+let PROJECT_ROOT_API = path.normalize('C:/');
 const PROJECT_ROOT_UI = __dirname;
 
 app.get('/', (req, res) => {
