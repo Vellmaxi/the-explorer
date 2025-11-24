@@ -308,6 +308,7 @@
     </div>
 
     <script>
+        const baseURL = ''; // 'https://localhost:3000';
         let currentPath = '.';
         let viewMode = 'grid'; // 'list' or 'grid'
 
@@ -315,7 +316,7 @@
 
         function downloadFile(filePath, fileName) {
             const link = document.createElement('a');
-            link.href = '/api/file?path=' + encodeURIComponent(filePath);
+            link.href = baseURL + '/api/file?path=' + encodeURIComponent(filePath);
             link.download = fileName;
             document.body.appendChild(link);
             link.click();
@@ -353,7 +354,7 @@
             currentPath = path;
             loadingEl.style.display = 'block';
             overlayEl.style.display = 'block';
-            fetch('/api/files?path=' + encodeURIComponent(path))
+            fetch(baseURL + '/api/files?path=' + encodeURIComponent(path))
                 .then(response => response.json().then(data => ({ response, data })))
                 .then(({ response, data }) => {
                 if (data.error || !response.ok) {
@@ -405,7 +406,7 @@
                         icon.textContent = 'folder';
                     } else if (isVideo(item.name)) {
                         const filePath = getFullPath(item.name);
-                        icon = createVideoThumbnail('/api/file?path=' + encodeURIComponent(filePath), 160, 90);
+                        icon = createVideoThumbnail(baseURL + '/api/file?path=' + encodeURIComponent(filePath), 160, 90);
                     } else {
                         icon = document.createElement('span');
                         icon.className = 'material-icons file-icon-grid';
@@ -439,7 +440,7 @@
                         icon.textContent = 'folder';
                     } else if (isVideo(item.name)) {
                         const filePath = getFullPath(item.name);
-                        icon = createVideoThumbnail('/api/file?path=' + encodeURIComponent(filePath), 150, 100);
+                        icon = createVideoThumbnail(baseURL + '/api/file?path=' + encodeURIComponent(filePath), 150, 100);
                     } else {
                         icon = document.createElement('span');
                         icon.className = 'material-icons file-icon';
@@ -489,7 +490,7 @@
         };
 
         function loadDrives() {
-            fetch('/api/get-root')
+            fetch(baseURL + '/api/get-root')
                 .then(response => response.json())
                 .then(currentData => {
                     const select = document.getElementById('drive-select');
@@ -498,7 +499,7 @@
                     currentOption.value = 'current';
                     currentOption.textContent = currentData.root;
                     select.appendChild(currentOption);
-                    fetch('/api/drives')
+                    fetch(baseURL + '/api/drives')
                         .then(response => response.json())
                         .then(data => {
                             data.drives.forEach(drive => {
@@ -516,7 +517,7 @@
         document.getElementById('drive-select').onchange = (event) => {
             const selectedValue = event.target.value;
             if (selectedValue && selectedValue !== 'current') {
-                fetch('/api/set-root', {
+                fetch(baseURL + '/api/set-root', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path: selectedValue })
