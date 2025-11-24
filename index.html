@@ -275,6 +275,186 @@
             padding: 0;
             border: unset;
         }
+
+        /* Upload button styles */
+        .upload-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: var(--header-bg);
+            color: var(--header-color);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .upload-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Upload modal styles */
+        .upload-modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .upload-modal-content {
+            background-color: var(--container-bg);
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .upload-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .upload-modal h2 {
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-color);
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+
+        .close-modal:hover {
+            background-color: var(--button-hover-bg);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-color);
+            background-color: var(--button-hover-bg);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent-color);
+            background-color: var(--button-hover-bg);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: var(--file-icon-color);
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: var(--text-color);
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: var(--file-details-color);
+            font-size: 14px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-button-modal {
+            background: var(--header-bg);
+            color: var(--header-color);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+
+        .upload-button-modal:hover {
+            opacity: 0.9;
+        }
+
+        .upload-button-modal:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .upload-progress {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--accent-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .upload-status {
+            margin-top: 10px;
+            color: var(--text-color);
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -305,6 +485,42 @@
     <div id="loading-overlay" class="loading-overlay"></div>
     <div id="loading" class="loading">
         <div id="loading-spinner"></div>
+    </div>
+
+    <!-- Upload Button -->
+    <button class="upload-button" id="upload-button">
+        <span class="material-icons">upload</span>
+    </button>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="upload-modal">
+        <div class="upload-modal-content">
+            <div class="upload-modal-header">
+                <h2>Upload Files</h2>
+                <button class="close-modal" id="close-modal">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            
+            <div class="upload-area" id="upload-area">
+                <span class="material-icons upload-icon">cloud_upload</span>
+                <div class="upload-text">Drag and drop files here</div>
+                <div class="upload-hint">or click to browse</div>
+            </div>
+            
+            <input type="file" id="file-input" class="file-input" multiple>
+            
+            <button class="upload-button-modal" id="upload-button-modal" disabled>
+                Upload Files
+            </button>
+            
+            <div class="upload-progress" id="upload-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="upload-status" id="upload-status"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -539,6 +755,200 @@
                 button.textContent = 'dark_mode';
             }
         };
+
+        // Upload functionality
+        let selectedFiles = [];
+
+        // Upload modal elements
+        const uploadButton = document.getElementById('upload-button');
+        const uploadModal = document.getElementById('upload-modal');
+        const closeModal = document.getElementById('close-modal');
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const uploadButtonModal = document.getElementById('upload-button-modal');
+        const uploadProgress = document.getElementById('upload-progress');
+        const progressFill = document.getElementById('progress-fill');
+        const uploadStatus = document.getElementById('upload-status');
+
+        // Open upload modal
+        uploadButton.addEventListener('click', () => {
+            uploadModal.style.display = 'block';
+            selectedFiles = [];
+            updateUploadButton();
+        });
+
+        // Close upload modal
+        closeModal.addEventListener('click', () => {
+            uploadModal.style.display = 'none';
+            resetUploadModal();
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === uploadModal) {
+                uploadModal.style.display = 'none';
+                resetUploadModal();
+            }
+        });
+
+        // Click to browse files
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (event) => {
+            selectedFiles = Array.from(event.target.files);
+            updateUploadButton();
+        });
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', (event) => {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (event) => {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+            selectedFiles = Array.from(event.dataTransfer.files);
+            updateUploadButton();
+        });
+
+        // Update upload button state
+        function updateUploadButton() {
+            uploadButtonModal.disabled = selectedFiles.length === 0;
+            if (selectedFiles.length > 0) {
+                uploadButtonModal.textContent = `Upload ${selectedFiles.length} File${selectedFiles.length > 1 ? 's' : ''}`;
+            } else {
+                uploadButtonModal.textContent = 'Upload Files';
+            }
+        }
+
+        // Reset upload modal
+        function resetUploadModal() {
+            selectedFiles = [];
+            fileInput.value = '';
+            uploadProgress.style.display = 'none';
+            progressFill.style.width = '0%';
+            uploadStatus.textContent = '';
+            updateUploadButton();
+        }
+
+        // Upload files
+        uploadButtonModal.addEventListener('click', async () => {
+            if (selectedFiles.length === 0) return;
+
+            uploadButtonModal.disabled = true;
+            uploadProgress.style.display = 'block';
+            progressFill.style.width = '0%';
+            uploadStatus.textContent = 'Uploading files...';
+
+            let uploadedCount = 0;
+            let hasError = false;
+            const totalFiles = selectedFiles.length;
+
+            try {
+                for (let i = 0; i < totalFiles; i++) {
+                    const file = selectedFiles[i];
+                    uploadStatus.textContent = `Uploading ${file.name} (${i + 1}/${totalFiles})...`;
+                    
+                    // Check file size and warn if too large
+                    const fileSizeMB = file.size / (1024 * 1024);
+                    if (fileSizeMB > 500) {
+                        const proceed = confirm(`Warning: ${file.name} is ${fileSizeMB.toFixed(1)}MB. Large files may cause browser issues. Continue?`);
+                        if (!proceed) {
+                            uploadStatus.textContent = `Upload cancelled for ${file.name}`;
+                            progressFill.style.width = `${((i + 1) / totalFiles) * 100}%`;
+                            continue;
+                        }
+                    }
+
+                    // Use FormData for better memory efficiency with large files
+                    const formData = new FormData();
+                    formData.append('path', currentPath);
+                    formData.append('file', file);
+
+                    // Create XMLHttpRequest for progress tracking
+                    const uploadPromise = new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        
+                        // Track upload progress
+                        xhr.upload.addEventListener('progress', (event) => {
+                            if (event.lengthComputable) {
+                                const fileProgress = (event.loaded / event.total) * 100;
+                                const overallProgress = ((i / totalFiles) * 100) + (fileProgress / totalFiles);
+                                progressFill.style.width = `${overallProgress}%`;
+                                uploadStatus.textContent = `Uploading ${file.name} (${i + 1}/${totalFiles}) - ${Math.round(fileProgress)}%`;
+                            }
+                        });
+                        
+                        xhr.addEventListener('load', () => {
+                            if (xhr.status === 200) {
+                                try {
+                                    const data = JSON.parse(xhr.responseText);
+                                    if (data.success) {
+                                        resolve(data);
+                                    } else {
+                                        reject(new Error(data.error || 'Upload failed'));
+                                    }
+                                } catch (e) {
+                                    reject(new Error('Invalid server response'));
+                                }
+                            } else {
+                                reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+                            }
+                        });
+                        
+                        xhr.addEventListener('error', () => {
+                            reject(new Error('Network error during upload'));
+                        });
+                        
+                        xhr.open('POST', baseURL + '/api/upload');
+                        xhr.send(formData);
+                    });
+
+                    try {
+                        const data = await uploadPromise;
+                        uploadedCount++;
+                        console.log(`Successfully uploaded ${file.name}`);
+                    } catch (error) {
+                        hasError = true;
+                        console.error(`Error uploading ${file.name}:`, error.message);
+                        uploadStatus.textContent = `Error uploading ${file.name}: ${error.message}`;
+                    }
+                    
+                    // Update progress to show completion of current file
+                    progressFill.style.width = `${((i + 1) / totalFiles) * 100}%`;
+                }
+
+                // Final status
+                if (uploadedCount === totalFiles) {
+                    uploadStatus.textContent = `Successfully uploaded ${uploadedCount} file(s)`;
+                    setTimeout(() => {
+                        uploadModal.style.display = 'none';
+                        resetUploadModal();
+                        loadDirectory(currentPath); // Refresh the directory
+                    }, 1500);
+                } else if (uploadedCount > 0) {
+                    uploadStatus.textContent = `Uploaded ${uploadedCount} of ${totalFiles} file(s). Some files failed.`;
+                    uploadButtonModal.disabled = false;
+                } else {
+                    uploadStatus.textContent = `No files were uploaded successfully.`;
+                    uploadButtonModal.disabled = false;
+                }
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                uploadStatus.textContent = `Upload error: ${error.message}`;
+                uploadButtonModal.disabled = false;
+            }
+        });
 
         // Load drives and the default directory on page load
         loadDrives();

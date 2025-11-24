@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '1gb' }));
+app.use(express.urlencoded({ extended: true, limit: '1gb', parameterLimit: 100000 }));
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -101,6 +102,192 @@ app.get('/api/file', (req, res) => {
             res.status(404).json({ error: 'File not found' });
         }
     } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Helper function to parse multipart form data without external dependencies
+function parseMultipartData(body, boundary) {
+    const parts = [];
+    const boundaryBuffer = Buffer.from('--' + boundary);
+    const endBoundaryBuffer = Buffer.from('--' + boundary + '--');
+    
+    let currentIndex = 0;
+    
+    while (currentIndex < body.length) {
+        // Find boundary
+        const boundaryIndex = body.indexOf(boundaryBuffer, currentIndex);
+        if (boundaryIndex === -1) break;
+        
+        // Check if it's the end boundary
+        const endBoundaryIndex = body.indexOf(endBoundaryBuffer, currentIndex);
+        if (endBoundaryIndex === boundaryIndex) break;
+        
+        // Find end of headers (double CRLF)
+        const headerEnd = body.indexOf(Buffer.from('\r\n\r\n'), boundaryIndex + boundaryBuffer.length);
+        if (headerEnd === -1) break;
+        
+        // Extract headers
+        const headerSection = body.slice(boundaryIndex + boundaryBuffer.length, headerEnd);
+        const headersText = headerSection.toString('utf8');
+        
+        // Parse headers
+        const headers = {};
+        const headerLines = headersText.split('\r\n');
+        for (const headerLine of headerLines) {
+            const colonIndex = headerLine.indexOf(':');
+            if (colonIndex > 0) {
+                const name = headerLine.substring(0, colonIndex).trim().toLowerCase();
+                const value = headerLine.substring(colonIndex + 1).trim();
+                headers[name] = value;
+            }
+        }
+        
+        // Find next boundary to determine content end
+        const nextBoundaryIndex = body.indexOf(boundaryBuffer, headerEnd + 4);
+        if (nextBoundaryIndex === -1) break;
+        
+        // Extract content (excluding the CRLF before the next boundary)
+        const contentStart = headerEnd + 4;
+        const contentEnd = nextBoundaryIndex - 2; // Exclude \r\n before boundary
+        const content = body.slice(contentStart, contentEnd);
+        
+        // Parse content-disposition
+        if (headers['content-disposition']) {
+            const disposition = headers['content-disposition'];
+            const nameMatch = disposition.match(/name="([^"]*)"/);
+            const filenameMatch = disposition.match(/filename="([^"]*)"/);
+            
+            if (nameMatch) {
+                parts.push({
+                    name: nameMatch[1],
+                    filename: filenameMatch ? filenameMatch[1] : null,
+                    contentType: headers['content-type'] || 'application/octet-stream',
+                    data: content
+                });
+            }
+        }
+        
+        currentIndex = nextBoundaryIndex;
+    }
+    
+    return parts;
+}
+
+// Add multer-like middleware for handling multipart/form-data without external dependencies
+app.post('/api/upload', (req, res) => {
+    try {
+        const contentType = req.get('content-type') || '';
+        
+        if (contentType.includes('multipart/form-data')) {
+            // Handle multipart form data upload
+            const chunks = [];
+            
+            req.on('data', (chunk) => {
+                chunks.push(chunk);
+            });
+            
+            req.on('end', () => {
+                try {
+                    const boundaryMatch = contentType.match(/boundary=([^;]+)/);
+                    if (!boundaryMatch) {
+                        return res.status(400).json({ error: 'No boundary found in multipart content' });
+                    }
+                    
+                    const boundary = boundaryMatch[1];
+                    const rawData = Buffer.concat(chunks);
+                    const parts = parseMultipartData(rawData, boundary);
+                    
+                    let uploadPath = req.body.path || req.query.path || '.';
+                    let targetDir = path.resolve(PROJECT_ROOT_API, uploadPath);
+                    
+                    const uploadedFiles = [];
+                    
+                    for (const part of parts) {
+                        if (part.filename) {
+                            const filePath = path.join(targetDir, part.filename);
+                            fs.writeFileSync(filePath, part.data);
+                            uploadedFiles.push({
+                                filename: part.filename,
+                                path: path.relative(PROJECT_ROOT_API, filePath),
+                                size: part.data.length
+                            });
+                        } else if (part.name === 'path') {
+                            // Handle path field from FormData
+                            uploadPath = part.data.toString().trim();
+                            targetDir = path.resolve(PROJECT_ROOT_API, uploadPath);
+                        }
+                    }
+                    
+                    // Security: restrict to project root and subdirectories
+                    if (!targetDir.startsWith(PROJECT_ROOT_API)) {
+                        return res.status(403).json({ error: 'Access denied' });
+                    }
+                    
+                    // Create directory if it doesn't exist
+                    if (!fs.existsSync(targetDir)) {
+                        fs.mkdirSync(targetDir, { recursive: true });
+                    }
+                    
+                    res.json({ 
+                        success: true, 
+                        message: `${uploadedFiles.length} file(s) uploaded successfully`,
+                        files: uploadedFiles 
+                    });
+                    
+                } catch (err) {
+                    console.error('Upload parsing error:', err);
+                    res.status(500).json({ error: err.message });
+                }
+            });
+            
+        } else if (contentType.includes('application/json')) {
+            // Handle JSON upload with base64 encoded file
+            const uploadPath = req.body.path || req.query.path || '.';
+            const targetDir = path.resolve(PROJECT_ROOT_API, uploadPath);
+            
+            // Security: restrict to project root and subdirectories
+            if (!targetDir.startsWith(PROJECT_ROOT_API)) {
+                return res.status(403).json({ error: 'Access denied' });
+            }
+            
+            // Create directory if it doesn't exist
+            if (!fs.existsSync(targetDir)) {
+                fs.mkdirSync(targetDir, { recursive: true });
+            }
+            
+            const { filename, data, encoding } = req.body;
+            
+            if (!filename || !data) {
+                return res.status(400).json({ error: 'Filename and data are required' });
+            }
+            
+            let fileData;
+            if (encoding === 'base64') {
+                fileData = Buffer.from(data, 'base64');
+            } else {
+                fileData = Buffer.from(data);
+            }
+            
+            const filePath = path.join(targetDir, filename);
+            fs.writeFileSync(filePath, fileData);
+            
+            res.json({ 
+                success: true, 
+                message: 'File uploaded successfully',
+                file: {
+                    filename: filename,
+                    path: path.relative(PROJECT_ROOT_API, filePath),
+                    size: fileData.length
+                }
+            });
+            
+        } else {
+            return res.status(400).json({ error: 'Unsupported content type. Use multipart/form-data or application/json' });
+        }
+        
+    } catch (err) {
+        console.error('Upload error:', err);
         res.status(500).json({ error: err.message });
     }
 });
