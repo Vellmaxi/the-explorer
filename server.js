@@ -292,6 +292,308 @@ app.post('/api/upload', (req, res) => {
     }
 });
 
+// Rename file or directory
+app.post('/api/rename', (req, res) => {
+    try {
+        const { oldPath, newPath } = req.body;
+        
+        if (!oldPath || !newPath) {
+            return res.status(400).json({ error: 'Old path and new path are required' });
+        }
+        
+        const resolvedOldPath = path.resolve(PROJECT_ROOT_API, oldPath);
+        const resolvedNewPath = path.resolve(PROJECT_ROOT_API, newPath);
+        
+        // Security: restrict to project root and subdirectories
+        if (!resolvedOldPath.startsWith(PROJECT_ROOT_API) || !resolvedNewPath.startsWith(PROJECT_ROOT_API)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        // Check if old path exists
+        if (!fs.existsSync(resolvedOldPath)) {
+            return res.status(404).json({ error: 'File or directory not found' });
+        }
+        
+        // Check if new path already exists
+        if (fs.existsSync(resolvedNewPath)) {
+            return res.status(409).json({ error: 'Destination already exists' });
+        }
+        
+        // Perform rename with better error handling
+        try {
+            fs.renameSync(resolvedOldPath, resolvedNewPath);
+        } catch (renameErr) {
+            // Handle permission errors specifically
+            if (renameErr.code === 'EPERM' || renameErr.code === 'EACCES') {
+                // Try copy and delete fallback for permission issues
+                try {
+                    const stats = fs.lstatSync(resolvedOldPath);
+                    if (stats.isDirectory()) {
+                        copyDirectoryRecursive(resolvedOldPath, resolvedNewPath);
+                        fs.rmSync(resolvedOldPath, { recursive: true, force: true });
+                    } else {
+                        fs.copyFileSync(resolvedOldPath, resolvedNewPath);
+                        fs.unlinkSync(resolvedOldPath);
+                    }
+                } catch (fallbackErr) {
+                    throw new Error(`Permission denied: Unable to rename file from '${resolvedOldPath}' to '${resolvedNewPath}'. This may be due to Windows security restrictions on system directories or insufficient permissions.`);
+                }
+            } else {
+                throw renameErr;
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Renamed successfully' 
+        });
+        
+    } catch (err) {
+        console.error('Rename error:', err);
+        
+        // Provide more specific error messages for common issues
+        let errorMessage = err.message;
+        if (err.code === 'EPERM') {
+            errorMessage = `Permission denied: Unable to rename file. This may be due to Windows security restrictions. Try renaming the file in a different location or running the application as administrator.`;
+        } else if (err.code === 'EACCES') {
+            errorMessage = `Access denied: Unable to rename file. The file may be in use or you may not have sufficient permissions.`;
+        } else if (err.code === 'EBUSY') {
+            errorMessage = `File is in use: Unable to rename file because it is currently being used by another process.`;
+        }
+        
+        res.status(500).json({ error: errorMessage });
+    }
+});
+
+// Delete file or directory
+app.post('/api/delete', (req, res) => {
+    try {
+        const { path: deletePath } = req.body;
+        
+        if (!deletePath) {
+            return res.status(400).json({ error: 'Path is required' });
+        }
+        
+        const resolvedPath = path.resolve(PROJECT_ROOT_API, deletePath);
+        
+        // Security: restrict to project root and subdirectories
+        if (!resolvedPath.startsWith(PROJECT_ROOT_API)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        // Check if path exists
+        if (!fs.existsSync(resolvedPath)) {
+            return res.status(404).json({ error: 'File or directory not found' });
+        }
+        
+        // Check if trying to delete current directory or parent
+        const currentPath = req.body.currentPath || '.';
+        function computeParent(path) {
+            if (path === '.') return '.';
+            const parts = path.split('/');
+            parts.pop();
+            return parts.join('/') || '.';
+        }
+        
+        if (resolvedPath === path.resolve(PROJECT_ROOT_API, currentPath) || 
+            resolvedPath === path.resolve(PROJECT_ROOT_API, computeParent(currentPath))) {
+            return res.status(400).json({ error: 'Cannot delete current or parent directory' });
+        }
+        
+        // Perform deletion (recursive for directories)
+        const stats = fs.lstatSync(resolvedPath);
+        if (stats.isDirectory()) {
+            fs.rmSync(resolvedPath, { recursive: true, force: true });
+        } else {
+            fs.unlinkSync(resolvedPath);
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Deleted successfully' 
+        });
+        
+    } catch (err) {
+        console.error('Delete error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Copy file or directory
+app.post('/api/copy', (req, res) => {
+    try {
+        const { sourcePath, targetPath, operation } = req.body;
+        
+        if (!sourcePath || !targetPath) {
+            return res.status(400).json({ error: 'Source path and target path are required' });
+        }
+        
+        const resolvedSourcePath = path.resolve(PROJECT_ROOT_API, sourcePath);
+        const resolvedTargetPath = path.resolve(PROJECT_ROOT_API, targetPath);
+        
+        // Security: restrict to project root and subdirectories
+        if (!resolvedSourcePath.startsWith(PROJECT_ROOT_API) || !resolvedTargetPath.startsWith(PROJECT_ROOT_API)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        // Check if source exists
+        if (!fs.existsSync(resolvedSourcePath)) {
+            return res.status(404).json({ error: 'Source file or directory not found' });
+        }
+        
+        // Check if target is a directory and adjust the path accordingly
+        let finalTargetPath = resolvedTargetPath;
+        if (fs.existsSync(resolvedTargetPath) && fs.statSync(resolvedTargetPath).isDirectory()) {
+            // If target is a directory, append the source filename
+            const sourceFilename = path.basename(resolvedSourcePath);
+            finalTargetPath = path.join(resolvedTargetPath, sourceFilename);
+        }
+        
+        // Ensure target directory exists
+        const targetDir = path.dirname(finalTargetPath);
+        if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+        }
+        
+        // Generate unique target name if it already exists
+        let counter = 1;
+        while (fs.existsSync(finalTargetPath)) {
+            const ext = path.extname(finalTargetPath);
+            const nameWithoutExt = path.basename(finalTargetPath, ext);
+            finalTargetPath = path.join(path.dirname(finalTargetPath), `${nameWithoutExt} (${counter})${ext}`);
+            counter++;
+        }
+        
+        // Perform copy (recursive for directories)
+        const stats = fs.lstatSync(resolvedSourcePath);
+        if (stats.isDirectory()) {
+            copyDirectoryRecursive(resolvedSourcePath, finalTargetPath);
+        } else {
+            fs.copyFileSync(resolvedSourcePath, finalTargetPath);
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Copied successfully' 
+        });
+        
+    } catch (err) {
+        console.error('Copy error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Cut (move) file or directory
+app.post('/api/cut', (req, res) => {
+    try {
+        const { sourcePath, targetPath, operation } = req.body;
+        
+        if (!sourcePath || !targetPath) {
+            return res.status(400).json({ error: 'Source path and target path are required' });
+        }
+        
+        const resolvedSourcePath = path.resolve(PROJECT_ROOT_API, sourcePath);
+        const resolvedTargetPath = path.resolve(PROJECT_ROOT_API, targetPath);
+        
+        // Security: restrict to project root and subdirectories
+        if (!resolvedSourcePath.startsWith(PROJECT_ROOT_API) || !resolvedTargetPath.startsWith(PROJECT_ROOT_API)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        // Check if source exists
+        if (!fs.existsSync(resolvedSourcePath)) {
+            return res.status(404).json({ error: 'Source file or directory not found' });
+        }
+        
+        // Check if target is a directory and adjust the path accordingly
+        let finalTargetPath = resolvedTargetPath;
+        if (fs.existsSync(resolvedTargetPath) && fs.statSync(resolvedTargetPath).isDirectory()) {
+            // If target is a directory, append the source filename
+            const sourceFilename = path.basename(resolvedSourcePath);
+            finalTargetPath = path.join(resolvedTargetPath, sourceFilename);
+        }
+        
+        // Ensure target directory exists
+        const targetDir = path.dirname(finalTargetPath);
+        if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+        }
+        
+        // Generate unique target name if it already exists
+        let counter = 1;
+        while (fs.existsSync(finalTargetPath)) {
+            const ext = path.extname(finalTargetPath);
+            const nameWithoutExt = path.basename(finalTargetPath, ext);
+            finalTargetPath = path.join(path.dirname(finalTargetPath), `${nameWithoutExt} (${counter})${ext}`);
+            counter++;
+        }
+        
+        // Perform move (rename) with better error handling
+        try {
+            fs.renameSync(resolvedSourcePath, finalTargetPath);
+        } catch (renameErr) {
+            // Handle permission errors specifically
+            if (renameErr.code === 'EPERM' || renameErr.code === 'EACCES') {
+                // Try copy and delete fallback for permission issues
+                try {
+                    const stats = fs.lstatSync(resolvedSourcePath);
+                    if (stats.isDirectory()) {
+                        copyDirectoryRecursive(resolvedSourcePath, finalTargetPath);
+                        fs.rmSync(resolvedSourcePath, { recursive: true, force: true });
+                    } else {
+                        fs.copyFileSync(resolvedSourcePath, finalTargetPath);
+                        fs.unlinkSync(resolvedSourcePath);
+                    }
+                } catch (fallbackErr) {
+                    throw new Error(`Permission denied: Unable to move file from '${resolvedSourcePath}' to '${finalTargetPath}'. This may be due to Windows security restrictions on system directories or insufficient permissions.`);
+                }
+            } else {
+                throw renameErr;
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            message: 'Moved successfully' 
+        });
+        
+    } catch (err) {
+        console.error('Cut error:', err);
+        
+        // Provide more specific error messages for common issues
+        let errorMessage = err.message;
+        if (err.code === 'EPERM') {
+            errorMessage = `Permission denied: Unable to move file. This may be due to Windows security restrictions. Try moving the file to a different location or running the application as administrator.`;
+        } else if (err.code === 'EACCES') {
+            errorMessage = `Access denied: Unable to move file. The file may be in use or you may not have sufficient permissions.`;
+        } else if (err.code === 'EBUSY') {
+            errorMessage = `File is in use: Unable to move file because it is currently being used by another process.`;
+        }
+        
+        res.status(500).json({ error: errorMessage });
+    }
+});
+
+// Helper function to copy directory recursively
+function copyDirectoryRecursive(source, target) {
+    if (!fs.existsSync(target)) {
+        fs.mkdirSync(target, { recursive: true });
+    }
+    
+    const files = fs.readdirSync(source);
+    files.forEach(file => {
+        const sourcePath = path.join(source, file);
+        const targetPath = path.join(target, file);
+        
+        const stats = fs.lstatSync(sourcePath);
+        if (stats.isDirectory()) {
+            copyDirectoryRecursive(sourcePath, targetPath);
+        } else {
+            fs.copyFileSync(sourcePath, targetPath);
+        }
+    });
+}
+
 app.listen(PORT, () => {
     console.log(`File explorer server running at http://localhost:${PORT}`);
 });

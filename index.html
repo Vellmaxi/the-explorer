@@ -276,11 +276,15 @@
             border: unset;
         }
 
-        /* Upload button styles */
-        .upload-button {
+        /* Floating Action Button styles */
+        .fab-container {
             position: fixed;
             bottom: 30px;
             right: 30px;
+            z-index: 1000;
+        }
+
+        .fab-main {
             width: 60px;
             height: 60px;
             background: var(--header-bg);
@@ -294,12 +298,194 @@
             justify-content: center;
             font-size: 24px;
             transition: all 0.3s ease;
-            z-index: 1000;
+            position: relative;
         }
 
-        .upload-button:hover {
+        .fab-main:hover {
             transform: scale(1.1);
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .fab-main.active {
+            transform: rotate(45deg);
+            background: var(--accent-color);
+        }
+
+        .fab-main .fab-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            background: #4CAF50;
+            border-radius: 50%;
+            border: 3px solid var(--container-bg);
+            display: none;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .fab-actions {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            transform: translateY(20px);
+        }
+
+        .fab-actions.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .fab-action {
+            width: 48px;
+            height: 48px;
+            background: var(--container-bg);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            transform: scale(0);
+            transition: all 0.3s ease;
+        }
+
+        .fab-actions.active .fab-action {
+            transform: scale(1);
+        }
+
+        .fab-action:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            background: var(--button-hover-bg);
+        }
+
+        .fab-label {
+            position: absolute;
+            right: 60px;
+            background: var(--container-bg);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 14px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .fab-action:hover .fab-label {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-5px);
+        }
+
+        /* Stagger animation for fab actions */
+        .fab-actions.active .fab-action:nth-child(1) {
+            transition-delay: 0.1s;
+        }
+
+        .fab-actions.active .fab-action:nth-child(2) {
+            transition-delay: 0.2s;
+        }
+
+        .fab-actions.active .fab-action:nth-child(3) {
+            transition-delay: 0.3s;
+        }
+
+        /* Toast notification styles */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: var(--container-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 250px;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease;
+            transition: all 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.hiding {
+            animation: slideOutRight 0.3s ease;
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast-icon {
+            font-size: 20px;
+            color: var(--accent-color);
+        }
+
+        .toast-message {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .toast.success .toast-icon {
+            color: #4CAF50;
+        }
+
+        .toast.error .toast-icon {
+            color: #f44336;
+        }
+
+        .toast.info .toast-icon {
+            color: #2196F3;
         }
 
         /* Upload modal styles */
@@ -455,6 +641,165 @@
             color: var(--text-color);
             font-size: 14px;
         }
+
+        /* Context menu styles */
+        .context-menu {
+            display: none;
+            position: fixed;
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1002;
+            min-width: 180px;
+            padding: 8px 0;
+            animation: contextMenuSlideIn 0.2s ease;
+        }
+
+        @keyframes contextMenuSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .context-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            color: var(--text-color);
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .context-menu-item:hover {
+            background-color: var(--button-hover-bg);
+        }
+
+        .context-menu-item .material-icons {
+            margin-right: 12px;
+            font-size: 18px;
+            color: var(--file-icon-color);
+        }
+
+        .context-menu-separator {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 4px 0;
+        }
+
+        .context-menu-item.danger {
+            color: #dc3545;
+        }
+
+        .context-menu-item.danger .material-icons {
+            color: #dc3545;
+        }
+
+        /* Long press indicator */
+        .file-item.long-press,
+        .file-item-grid.long-press {
+            background-color: var(--button-hover-bg);
+            transform: scale(0.98);
+            transition: all 0.1s ease;
+        }
+
+        /* Rename modal styles */
+        .rename-modal {
+            display: none;
+            position: fixed;
+            z-index: 1003;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .rename-modal-content {
+            background-color: var(--container-bg);
+            margin: 20% auto;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        .rename-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .rename-modal h3 {
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .rename-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            font-size: 16px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .rename-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .rename-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .rename-button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+        }
+
+        .rename-button.primary {
+            background-color: var(--header-bg);
+            color: var(--header-color);
+        }
+
+        .rename-button.primary:hover {
+            opacity: 0.9;
+        }
+
+        .rename-button.secondary {
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .rename-button.secondary:hover {
+            background-color: var(--button-hover-bg);
+        }
+
     </style>
 </head>
 <body>
@@ -487,10 +832,31 @@
         <div id="loading-spinner"></div>
     </div>
 
-    <!-- Upload Button -->
-    <button class="upload-button" id="upload-button">
-        <span class="material-icons">upload</span>
-    </button>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+        <!-- Floating Action Button -->
+    <div class="fab-container">
+        <button class="fab-main" id="fab-main">
+            <span class="material-icons">more_vert</span>
+            <div class="fab-badge" id="fab-badge"></div>
+        </button>
+        
+        <div class="fab-actions" id="fab-actions">
+            <button class="fab-action" id="fab-refresh">
+                <span class="material-icons">refresh</span>
+                <span class="fab-label">Refresh</span>
+            </button>
+            <button class="fab-action" id="fab-upload">
+                <span class="material-icons">upload</span>
+                <span class="fab-label">Upload</span>
+            </button>
+            <button class="fab-action" id="fab-paste" style="display: none;">
+                <span class="material-icons">content_paste</span>
+                <span class="fab-label">Paste</span>
+            </button>
+        </div>
+    </div>
 
     <!-- Upload Modal -->
     <div id="upload-modal" class="upload-modal">
@@ -519,6 +885,57 @@
                     <div class="progress-fill" id="progress-fill"></div>
                 </div>
                 <div class="upload-status" id="upload-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu">
+        <button class="context-menu-item" id="ctx-open">
+            <span class="material-icons">folder_open</span>
+            Open
+        </button>
+        <button class="context-menu-item" id="ctx-download">
+            <span class="material-icons">download</span>
+            Download
+        </button>
+        <div class="context-menu-separator"></div>
+        <button class="context-menu-item" id="ctx-rename">
+            <span class="material-icons">edit</span>
+            Rename
+        </button>
+        <button class="context-menu-item" id="ctx-copy">
+            <span class="material-icons">content_copy</span>
+            Copy
+        </button>
+        <button class="context-menu-item" id="ctx-cut">
+            <span class="material-icons">content_cut</span>
+            Cut
+        </button>
+        <button class="context-menu-item" id="ctx-paste" style="display: none;">
+            <span class="material-icons">content_paste</span>
+            Paste
+        </button>
+        <div class="context-menu-separator"></div>
+        <button class="context-menu-item danger" id="ctx-delete">
+            <span class="material-icons">delete</span>
+            Delete
+        </button>
+    </div>
+
+    <!-- Rename Modal -->
+    <div id="rename-modal" class="rename-modal">
+        <div class="rename-modal-content">
+            <div class="rename-modal-header">
+                <h3>Rename</h3>
+                <button class="close-modal" id="rename-close">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <input type="text" id="rename-input" class="rename-input" placeholder="Enter new name">
+            <div class="rename-buttons">
+                <button class="rename-button secondary" id="rename-cancel">Cancel</button>
+                <button class="rename-button primary" id="rename-confirm">Rename</button>
             </div>
         </div>
     </div>
@@ -637,7 +1054,13 @@
                         div.appendChild(nameEl);
                     }
 
-                    div.onclick = item.isDirectory ? (item.name === '..' ? () => loadDirectory(computeParent(currentPath)) : () => loadDirectory(getFullPath(item.name))) : (isVideo(item.name) ? null : () => downloadFile(getFullPath(item.name), item.name));
+                    // Add long press support (skip '..' item)
+                    if (item.name !== '..') {
+                        addLongPressSupport(div, item);
+                    } else {
+                        // Add click handler for '..' item
+                        div.onclick = () => loadDirectory(computeParent(currentPath));
+                    }
 
                     filesEl.appendChild(div);
                 });
@@ -685,10 +1108,15 @@
                     infoDiv.appendChild(detailsEl);
 
                     topRow.appendChild(infoDiv);
-
                     li.appendChild(topRow);
 
-                    li.onclick = item.isDirectory ? (item.name === '..' ? () => loadDirectory(computeParent(currentPath)) : () => loadDirectory(getFullPath(item.name))) : () => downloadFile(getFullPath(item.name), item.name);
+                    // Add long press support (skip '..' item)
+                    if (item.name !== '..') {
+                        addLongPressSupport(li, item);
+                    } else {
+                        // Add click handler for '..' item
+                        li.onclick = () => loadDirectory(computeParent(currentPath));
+                    }
 
                     filesEl.appendChild(li);
                 });
@@ -756,11 +1184,92 @@
             }
         };
 
+        // Floating Action Button functionality
+        let fabExpanded = false;
+        const fabMain = document.getElementById('fab-main');
+        const fabActions = document.getElementById('fab-actions');
+        const fabRefresh = document.getElementById('fab-refresh');
+        const fabUpload = document.getElementById('fab-upload');
+        const fabPaste = document.getElementById('fab-paste');
+        const fabBadge = document.getElementById('fab-badge');
+
+        // Toggle FAB expansion
+        fabMain.addEventListener('click', () => {
+            fabExpanded = !fabExpanded;
+            if (fabExpanded) {
+                fabMain.classList.add('active');
+                fabActions.classList.add('active');
+            } else {
+                fabMain.classList.remove('active');
+                fabActions.classList.remove('active');
+            }
+        });
+
+        // Close FAB when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!fabMain.contains(e.target) && !fabActions.contains(e.target)) {
+                fabExpanded = false;
+                fabMain.classList.remove('active');
+                fabActions.classList.remove('active');
+            }
+        });
+
+        // Toast notification system
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = document.createElement('span');
+            icon.className = 'material-icons toast-icon';
+            
+            switch(type) {
+                case 'success':
+                    icon.textContent = 'check_circle';
+                    break;
+                case 'error':
+                    icon.textContent = 'error';
+                    break;
+                case 'info':
+                default:
+                    icon.textContent = 'info';
+                    break;
+            }
+            
+            const messageEl = document.createElement('div');
+            messageEl.className = 'toast-message';
+            messageEl.textContent = message;
+            
+            toast.appendChild(icon);
+            toast.appendChild(messageEl);
+            toastContainer.appendChild(toast);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Update clipboard state management
+        function updateClipboardState() {
+            if (clipboardItem) {
+                fabBadge.style.display = 'block';
+                fabPaste.style.display = 'flex';
+            } else {
+                fabBadge.style.display = 'none';
+                fabPaste.style.display = 'none';
+            }
+        }
+
         // Upload functionality
         let selectedFiles = [];
 
         // Upload modal elements
-        const uploadButton = document.getElementById('upload-button');
         const uploadModal = document.getElementById('upload-modal');
         const closeModal = document.getElementById('close-modal');
         const uploadArea = document.getElementById('upload-area');
@@ -770,11 +1279,36 @@
         const progressFill = document.getElementById('progress-fill');
         const uploadStatus = document.getElementById('upload-status');
 
-        // Open upload modal
-        uploadButton.addEventListener('click', () => {
+        // Refresh functionality from FAB
+        fabRefresh.addEventListener('click', () => {
+            loadDirectory(currentPath);
+            showToast('Directory refreshed', 'success');
+            // Close FAB after refreshing
+            fabExpanded = false;
+            fabMain.classList.remove('active');
+            fabActions.classList.remove('active');
+        });
+
+        // Open upload modal from FAB
+        fabUpload.addEventListener('click', () => {
             uploadModal.style.display = 'block';
             selectedFiles = [];
             updateUploadButton();
+            // Close FAB after opening modal
+            fabExpanded = false;
+            fabMain.classList.remove('active');
+            fabActions.classList.remove('active');
+        });
+
+        // Paste functionality from FAB
+        fabPaste.addEventListener('click', () => {
+            if (clipboardItem) {
+                pasteToCurrentDirectory();
+            }
+            // Close FAB after pasting
+            fabExpanded = false;
+            fabMain.classList.remove('active');
+            fabActions.classList.remove('active');
         });
 
         // Close upload modal
@@ -949,6 +1483,412 @@
                 uploadButtonModal.disabled = false;
             }
         });
+
+        // Context menu and long press functionality
+        let contextMenuItem = null;
+        let longPressTimer = null;
+        let isLongPress = false;
+
+        // Copy/paste functionality
+        let clipboardItem = null;
+        let clipboardOperation = null; // 'copy' or 'cut'
+
+        // Context menu elements
+        const contextMenu = document.getElementById('context-menu');
+        const renameModal = document.getElementById('rename-modal');
+        const renameInput = document.getElementById('rename-input');
+        const renameClose = document.getElementById('rename-close');
+        const renameCancel = document.getElementById('rename-cancel');
+        const renameConfirm = document.getElementById('rename-confirm');
+
+        // Long press detection
+        function addLongPressSupport(element, item) {
+            let startX, startY;
+            let hasMoved = false;
+            let clickStarted = false;
+
+            const handleStart = (e) => {
+                // Prevent default to avoid any browser interference
+                if (e.type === 'touchstart') {
+                    e.preventDefault();
+                }
+                
+                isLongPress = false;
+                hasMoved = false;
+                clickStarted = true;
+                startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                
+                longPressTimer = setTimeout(() => {
+                    if (clickStarted && !hasMoved) {
+                        isLongPress = true;
+                        element.classList.add('long-press');
+                        showContextMenu(e, item);
+                    }
+                }, 500);
+            };
+
+            const handleMove = (e) => {
+                if (!clickStarted) return;
+                
+                const currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                const currentY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                const moveThreshold = 10;
+                
+                if (Math.abs(currentX - startX) > moveThreshold || Math.abs(currentY - startY) > moveThreshold) {
+                    hasMoved = true;
+                    clearTimeout(longPressTimer);
+                }
+            };
+
+            const handleEnd = (e) => {
+                if (!clickStarted) return;
+                
+                clearTimeout(longPressTimer);
+                element.classList.remove('long-press');
+                
+                // Only trigger action if it was a clean click (no movement, not a long press)
+                if (!isLongPress && !hasMoved) {
+                    // Prevent event propagation to avoid any other handlers
+                    if (e.type === 'mouseup') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                    
+                    // Normal click behavior
+                    if (item.isDirectory) {
+                        if (item.name === '..') {
+                            loadDirectory(computeParent(currentPath));
+                        } else {
+                            loadDirectory(getFullPath(item.name));
+                        }
+                    } else if (!isVideo(item.name)) {
+                        downloadFile(getFullPath(item.name), item.name);
+                    }
+                }
+                
+                isLongPress = false;
+                hasMoved = false;
+                clickStarted = false;
+            };
+
+            const handleLeave = (e) => {
+                clearTimeout(longPressTimer);
+                element.classList.remove('long-press');
+                hasMoved = false;
+                clickStarted = false;
+            };
+
+            // Mouse events
+            element.addEventListener('mousedown', handleStart);
+            element.addEventListener('mousemove', handleMove);
+            element.addEventListener('mouseup', handleEnd);
+            element.addEventListener('mouseleave', handleLeave);
+            element.addEventListener('click', (e) => {
+                // Prevent any click events that weren't handled by our logic
+                if (!isLongPress && !hasMoved) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            });
+
+            // Add right-click context menu support
+            element.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showContextMenu(e, item);
+            });
+
+            // Touch events
+            element.addEventListener('touchstart', handleStart, { passive: false });
+            element.addEventListener('touchmove', handleMove, { passive: false });
+            element.addEventListener('touchend', handleEnd, { passive: false });
+            element.addEventListener('touchcancel', handleLeave);
+        }
+
+        // Show context menu
+        function showContextMenu(event, item) {
+            event.preventDefault();
+            contextMenuItem = item;
+            
+            // Update context menu items based on item type
+            const ctxOpen = document.getElementById('ctx-open');
+            const ctxDownload = document.getElementById('ctx-download');
+            const ctxPaste = document.getElementById('ctx-paste');
+            
+            ctxOpen.style.display = item.isDirectory ? 'flex' : 'none';
+            ctxDownload.style.display = !item.isDirectory ? 'flex' : 'none';
+            
+            // Show paste option if there's something in clipboard and we're in a directory
+            ctxPaste.style.display = (item.isDirectory && clipboardItem) ? 'flex' : 'none';
+            
+            // Position context menu
+            const x = event.type.includes('mouse') ? event.clientX : event.touches[0].clientX;
+            const y = event.type.includes('mouse') ? event.clientY : event.touches[0].clientY;
+            
+            contextMenu.style.left = x + 'px';
+            contextMenu.style.top = y + 'px';
+            contextMenu.style.display = 'block';
+            
+            // Adjust position if menu goes off screen
+            const rect = contextMenu.getBoundingClientRect();
+            if (rect.right > window.innerWidth) {
+                contextMenu.style.left = (x - rect.width) + 'px';
+            }
+            if (rect.bottom > window.innerHeight) {
+                contextMenu.style.top = (y - rect.height) + 'px';
+            }
+        }
+
+        // Hide context menu
+        function hideContextMenu() {
+            contextMenu.style.display = 'none';
+            contextMenuItem = null;
+        }
+
+        // Context menu actions
+        document.getElementById('ctx-open').addEventListener('click', () => {
+            if (contextMenuItem && contextMenuItem.isDirectory) {
+                loadDirectory(getFullPath(contextMenuItem.name));
+            }
+            hideContextMenu();
+        });
+
+        document.getElementById('ctx-download').addEventListener('click', () => {
+            if (contextMenuItem && !contextMenuItem.isDirectory) {
+                downloadFile(getFullPath(contextMenuItem.name), contextMenuItem.name);
+            }
+            hideContextMenu();
+        });
+
+        document.getElementById('ctx-rename').addEventListener('click', () => {
+            if (contextMenuItem) {
+                // Store the item locally BEFORE hiding context menu
+                const itemToRename = contextMenuItem;
+                renameInput.value = itemToRename.name;
+                renameModal.style.display = 'block';
+                renameInput.focus();
+                renameInput.select();
+                
+                // Store the item in the modal for later use
+                renameModal.dataset.itemToRename = JSON.stringify(itemToRename);
+            }
+            hideContextMenu();
+        });
+
+        document.getElementById('ctx-copy').addEventListener('click', () => {
+            if (contextMenuItem) {
+                clipboardItem = {
+                    name: contextMenuItem.name,
+                    isDirectory: contextMenuItem.isDirectory,
+                    sourcePath: getFullPath(contextMenuItem.name)
+                };
+                clipboardOperation = 'copy';
+                updateClipboardState();
+                const itemType = contextMenuItem.isDirectory ? 'Folder' : 'File';
+                showToast(`${itemType} "${contextMenuItem.name}" copied to clipboard`, 'success');
+            }
+            hideContextMenu();
+        });
+
+        document.getElementById('ctx-cut').addEventListener('click', () => {
+            if (contextMenuItem) {
+                clipboardItem = {
+                    name: contextMenuItem.name,
+                    isDirectory: contextMenuItem.isDirectory,
+                    sourcePath: getFullPath(contextMenuItem.name)
+                };
+                clipboardOperation = 'cut';
+                updateClipboardState();
+                const itemType = contextMenuItem.isDirectory ? 'Folder' : 'File';
+                showToast(`${itemType} "${contextMenuItem.name}" cut to clipboard`, 'info');
+            }
+            hideContextMenu();
+        });
+
+        document.getElementById('ctx-paste').addEventListener('click', () => {
+            if (clipboardItem && contextMenuItem && contextMenuItem.isDirectory) {
+                pasteItem(contextMenuItem);
+            }
+            hideContextMenu();
+        });
+
+        document.getElementById('ctx-delete').addEventListener('click', () => {
+            if (contextMenuItem) {
+                if (confirm(`Are you sure you want to delete "${contextMenuItem.name}"?`)) {
+                    deleteFile(contextMenuItem);
+                }
+            }
+            hideContextMenu();
+        });
+
+        // Rename modal functionality
+        renameClose.addEventListener('click', () => {
+            renameModal.style.display = 'none';
+        });
+
+        renameCancel.addEventListener('click', () => {
+            renameModal.style.display = 'none';
+        });
+
+        renameConfirm.addEventListener('click', () => {
+            const newName = renameInput.value.trim();
+            
+            // Get the stored item from the modal dataset
+            const itemToRename = renameModal.dataset.itemToRename ? JSON.parse(renameModal.dataset.itemToRename) : null;
+            
+            if (newName && itemToRename && newName !== itemToRename.name) {
+                renameFile(itemToRename, newName);
+            }
+            renameModal.style.display = 'none';
+            // Clear the stored item
+            delete renameModal.dataset.itemToRename;
+        });
+
+        renameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                renameConfirm.click();
+            } else if (e.key === 'Escape') {
+                renameModal.style.display = 'none';
+            }
+        });
+
+        // File operations
+        async function renameFile(item, newName) {
+            try {
+                const oldPath = getFullPath(item.name);
+                const newPath = getFullPath(newName);
+                
+                const response = await fetch(baseURL + '/api/rename', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ oldPath, newPath })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(`Successfully renamed "${item.name}" to "${newName}"`, 'success');
+                    loadDirectory(currentPath);
+                } else {
+                    alert('Error renaming file: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Rename error:', error);
+                alert('Error renaming file: ' + error.message);
+            }
+        }
+
+        async function deleteFile(item) {
+            try {
+                const filePath = getFullPath(item.name);
+                
+                const response = await fetch(baseURL + '/api/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: filePath })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    loadDirectory(currentPath);
+                } else {
+                    alert('Error deleting file: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                alert('Error deleting file: ' + error.message);
+            }
+        }
+
+        async function pasteItem(targetDirectory) {
+            try {
+                const targetPath = getFullPath(targetDirectory.name);
+                const endpoint = clipboardOperation === 'copy' ? '/api/copy' : '/api/cut';
+                
+                const response = await fetch(baseURL + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        sourcePath: clipboardItem.sourcePath,
+                        targetPath: targetPath,
+                        operation: clipboardOperation
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    loadDirectory(currentPath);
+                    const itemType = clipboardItem.isDirectory ? 'Folder' : 'File';
+                    const action = clipboardOperation === 'copy' ? 'copied' : 'moved';
+                    showToast(`${itemType} "${clipboardItem.name}" ${action} to "${targetDirectory.name}"`, 'success');
+                    
+                    // Clear clipboard after successful paste
+                    if (clipboardOperation === 'cut') {
+                        clipboardItem = null;
+                        clipboardOperation = null;
+                        updateClipboardState();
+                    }
+                } else {
+                    showToast('Error pasting item: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Paste error:', error);
+                showToast('Error pasting item: ' + error.message, 'error');
+            }
+        }
+
+        async function pasteToCurrentDirectory() {
+            try {
+                const targetPath = currentPath === '.' ? '.' : currentPath;
+                const endpoint = clipboardOperation === 'copy' ? '/api/copy' : '/api/cut';
+                
+                const response = await fetch(baseURL + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        sourcePath: clipboardItem.sourcePath,
+                        targetPath: targetPath,
+                        operation: clipboardOperation
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    loadDirectory(currentPath);
+                    const itemType = clipboardItem.isDirectory ? 'Folder' : 'File';
+                    const action = clipboardOperation === 'copy' ? 'copied' : 'moved';
+                    const location = currentPath === '.' ? 'current directory' : currentPath;
+                    showToast(`${itemType} "${clipboardItem.name}" ${action} to ${location}`, 'success');
+                    
+                    // Clear clipboard after successful paste
+                    if (clipboardOperation === 'cut') {
+                        clipboardItem = null;
+                        clipboardOperation = null;
+                        updateClipboardState();
+                    }
+                } else {
+                    showToast('Error pasting item: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Paste error:', error);
+                showToast('Error pasting item: ' + error.message, 'error');
+            }
+        }
+
+        // Close context menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!contextMenu.contains(e.target)) {
+                hideContextMenu();
+            }
+        });
+
+        // Close rename modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === renameModal) {
+                renameModal.style.display = 'none';
+            }
+        });
+
 
         // Load drives and the default directory on page load
         loadDrives();
