@@ -19,8 +19,17 @@ app.use((req, res, next) => {
 });
 
 const PORT = 3000;
-let PROJECT_ROOT_API = path.normalize('C:/');
+let PROJECT_ROOT_API = path.normalize('C:\\');
 const PROJECT_ROOT_UI = __dirname;
+const RESTRICTED_DRIVES = []; // ['C:\\', 'D:\\'];
+
+// Helper function to check if path is within restricted drives
+const isPathRestricted = (fullPath) => {
+    const normalizedPath = path.normalize(fullPath);
+    return RESTRICTED_DRIVES.some(drive =>
+        normalizedPath.toLowerCase().startsWith(path.normalize(drive).toLowerCase())
+    );
+};
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(PROJECT_ROOT_UI, 'index.html'));
@@ -30,10 +39,12 @@ app.get('/api/drives', (req, res) => {
     const drives = [];
     for (let letter = 65; letter <= 90; letter++) {
         const drive = String.fromCharCode(letter) + ':\\';
-        try {
-            fs.statSync(drive);
-            drives.push(drive);
-        } catch {}
+        if (!RESTRICTED_DRIVES.includes(drive)) {
+            try {
+                fs.statSync(drive);
+                drives.push(drive);
+            } catch {}
+        }
     }
     res.json({ drives });
 });
@@ -42,8 +53,8 @@ app.get('/api/files', (req, res) => {
     const queryPath = req.query.path || '.';
     const fullPath = path.resolve(PROJECT_ROOT_API, queryPath);
 
-    // Security: restrict to project root and subdirectories
-    if (!fullPath.startsWith(PROJECT_ROOT_API)) {
+    // Security: deny access to restricted drives
+    if (isPathRestricted(fullPath)) {
         return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -75,7 +86,11 @@ app.get('/api/files', (req, res) => {
 app.post('/api/set-root', (req, res) => {
     const { path: rootPath } = req.body;
     if (rootPath) {
-        PROJECT_ROOT_API = path.normalize(rootPath);
+        const normalizedRootPath = path.normalize(rootPath);
+        if (isPathRestricted(normalizedRootPath)) {
+            return res.status(403).json({ error: 'Access denied: Root path cannot be on a restricted drive' });
+        }
+        PROJECT_ROOT_API = normalizedRootPath;
         res.json({ success: true });
     } else {
         res.status(400).json({ error: 'Path is required' });
@@ -90,8 +105,8 @@ app.get('/api/file', (req, res) => {
     const queryPath = req.query.path;
     const fullPath = path.resolve(PROJECT_ROOT_API, queryPath);
 
-    // Security: restrict to project root and subdirectories
-    if (!fullPath.startsWith(PROJECT_ROOT_API)) {
+    // Security: deny access to restricted drives
+    if (isPathRestricted(fullPath)) {
         return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -219,8 +234,8 @@ app.post('/api/upload', (req, res) => {
                         }
                     }
                     
-                    // Security: restrict to project root and subdirectories
-                    if (!targetDir.startsWith(PROJECT_ROOT_API)) {
+                    // Security: deny access to restricted drives
+                    if (isPathRestricted(targetDir)) {
                         return res.status(403).json({ error: 'Access denied' });
                     }
                     
@@ -246,8 +261,8 @@ app.post('/api/upload', (req, res) => {
             const uploadPath = req.body.path || req.query.path || '.';
             const targetDir = path.resolve(PROJECT_ROOT_API, uploadPath);
             
-            // Security: restrict to project root and subdirectories
-            if (!targetDir.startsWith(PROJECT_ROOT_API)) {
+            // Security: deny access to restricted drives
+            if (isPathRestricted(targetDir)) {
                 return res.status(403).json({ error: 'Access denied' });
             }
             
@@ -304,8 +319,8 @@ app.post('/api/rename', (req, res) => {
         const resolvedOldPath = path.resolve(PROJECT_ROOT_API, oldPath);
         const resolvedNewPath = path.resolve(PROJECT_ROOT_API, newPath);
         
-        // Security: restrict to project root and subdirectories
-        if (!resolvedOldPath.startsWith(PROJECT_ROOT_API) || !resolvedNewPath.startsWith(PROJECT_ROOT_API)) {
+        // Security: deny access to restricted drives
+        if (isPathRestricted(resolvedOldPath) || isPathRestricted(resolvedNewPath)) {
             return res.status(403).json({ error: 'Access denied' });
         }
         
@@ -376,8 +391,8 @@ app.post('/api/delete', (req, res) => {
         
         const resolvedPath = path.resolve(PROJECT_ROOT_API, deletePath);
         
-        // Security: restrict to project root and subdirectories
-        if (!resolvedPath.startsWith(PROJECT_ROOT_API)) {
+        // Security: deny access to restricted drives
+        if (isPathRestricted(resolvedPath)) {
             return res.status(403).json({ error: 'Access denied' });
         }
         
@@ -431,8 +446,8 @@ app.post('/api/copy', (req, res) => {
         const resolvedSourcePath = path.resolve(PROJECT_ROOT_API, sourcePath);
         const resolvedTargetPath = path.resolve(PROJECT_ROOT_API, targetPath);
         
-        // Security: restrict to project root and subdirectories
-        if (!resolvedSourcePath.startsWith(PROJECT_ROOT_API) || !resolvedTargetPath.startsWith(PROJECT_ROOT_API)) {
+        // Security: deny access to restricted drives
+        if (isPathRestricted(resolvedSourcePath) || isPathRestricted(resolvedTargetPath)) {
             return res.status(403).json({ error: 'Access denied' });
         }
         
@@ -495,8 +510,8 @@ app.post('/api/cut', (req, res) => {
         const resolvedSourcePath = path.resolve(PROJECT_ROOT_API, sourcePath);
         const resolvedTargetPath = path.resolve(PROJECT_ROOT_API, targetPath);
         
-        // Security: restrict to project root and subdirectories
-        if (!resolvedSourcePath.startsWith(PROJECT_ROOT_API) || !resolvedTargetPath.startsWith(PROJECT_ROOT_API)) {
+        // Security: deny access to restricted drives
+        if (isPathRestricted(resolvedSourcePath) || isPathRestricted(resolvedTargetPath)) {
             return res.status(403).json({ error: 'Access denied' });
         }
         

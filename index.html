@@ -944,6 +944,8 @@
         const baseURL = ''; // 'https://localhost:3000';
         let currentPath = '.';
         let viewMode = 'grid'; // 'list' or 'grid'
+        let availableDrives = [];
+        let currentRoot = '';
 
         const videoExtensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.m4v'];
 
@@ -990,21 +992,62 @@
             fetch(baseURL + '/api/files?path=' + encodeURIComponent(path))
                 .then(response => response.json().then(data => ({ response, data })))
                 .then(({ response, data }) => {
-                if (data.error || !response.ok) {
-                    alert('Error loading directory: ' + (data.error || 'Server error'));
-                    return;
-                }
-                if (data.path !== '.') {
-                    data.items.unshift({name: '..', isDirectory: true});
-                }
-                renderFiles(data.items);
-                if (data.fullPath) {
-                    const currentOption = document.querySelector('#drive-select option[value="current"]');
-                    if (currentOption) {
-                        currentOption.textContent = data.fullPath;
-                        document.getElementById('drive-select').value = 'current';
+                    if (data.error || !response.ok) {
+                        if (data.error && data.error.includes('Access denied')) {
+                            // Try to switch to another available drive
+                            fetch(baseURL + '/api/drives')
+                                .then(response => response.json())
+                                .then(drivesData => {
+                                    const drives = drivesData.drives;
+                                    fetch(baseURL + '/api/get-root')
+                                        .then(response => response.json())
+                                        .then(rootData => {
+                                            const currentRoot = rootData.root;
+                                            const currentDrive = currentRoot.substring(0, 3); // e.g., "C:\"
+                                            const nextDrive = drives.find(drive => drive !== currentDrive);
+                                            if (nextDrive) {
+                                                fetch(baseURL + '/api/set-root', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ path: nextDrive })
+                                                }).then(setRootResponse => setRootResponse.json())
+                                                .then(setRootData => {
+                                                    if (setRootData.success) {
+                                                        loadDirectory('.');
+                                                    } else {
+                                                        alert('Error switching to another drive: ' + setRootData.error);
+                                                    }
+                                                }).catch(error => {
+                                                    console.error('Error setting root:', error);
+                                                    alert('Error switching to another drive');
+                                                });
+                                            } else {
+                                                alert('Access denied and no other drives available');
+                                            }
+                                        }).catch(error => {
+                                            console.error('Error getting root:', error);
+                                            alert('Error loading directory: Access denied');
+                                        });
+                                }).catch(error => {
+                                    console.error('Error loading drives:', error);
+                                    alert('Error loading directory: Access denied');
+                                });
+                        } else {
+                            alert('Error loading directory: ' + (data.error || 'Server error'));
+                        }
+                    } else {
+                        if (data.path !== '.') {
+                            data.items.unshift({name: '..', isDirectory: true});
+                        }
+                        renderFiles(data.items);
+                        if (data.fullPath) {
+                            const currentOption = document.querySelector('#drive-select option[value="current"]');
+                            if (currentOption) {
+                                currentOption.textContent = data.fullPath;
+                                document.getElementById('drive-select').value = 'current';
+                            }
+                        }
                     }
-                }
                 })
                 .catch(error => console.error('Error loading directory:', error))
                 .finally(() => {
@@ -1137,6 +1180,7 @@
             fetch(baseURL + '/api/get-root')
                 .then(response => response.json())
                 .then(currentData => {
+                    currentRoot = currentData.root;
                     const select = document.getElementById('drive-select');
                     select.innerHTML = '';
                     const currentOption = document.createElement('option');
@@ -1146,6 +1190,7 @@
                     fetch(baseURL + '/api/drives')
                         .then(response => response.json())
                         .then(data => {
+                            availableDrives = data.drives;
                             data.drives.forEach(drive => {
                                 const option = document.createElement('option');
                                 option.value = drive;
