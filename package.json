@@ -5,6 +5,7 @@
 		"express": "^4.18.0"
 	},
 	"scripts": {
-		"start": "node server.js"
+		"start": "node server-linux.js",
+		"serve": "node server.js"
 	}
 }
